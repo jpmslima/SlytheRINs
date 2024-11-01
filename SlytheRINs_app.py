@@ -46,8 +46,8 @@ if selected_file:
 '''
 
 # Save the Streamlit app code to a file
-with open('streamlit_app.py', 'w') as file:
+with open('slytherins-beta_app.py', 'w') as file:
     file.write(streamlit_app_code)
 
-print('Streamlit app structure created and saved as streamlit_app.py')
+print('Streamlit app structure created and saved as slytherins-beta_app.py')
 
