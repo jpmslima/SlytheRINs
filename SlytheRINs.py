@@ -6,7 +6,6 @@ import plotly.graph_objects as go
 import plotly.express as px
 from pandas.errors import EmptyDataError
 import os
-import numpy as np
 
 st.image('SlytheRINs-logo.svg', use_column_width=True)
 
