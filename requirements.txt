@@ -6,3 +6,4 @@ scipy
 numpy
 matplotlib
 kaleido
+requests
