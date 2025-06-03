@@ -414,7 +414,7 @@ elif use_example_file_am:
 
 # --- Main Content Area ---
 st.header('**SlytheRINs Dashboard**') 
-tab1, tab2, tab3 = st.tabs(["RIN Comparison & Network Complexity", "Chemical Interactions", "AlphaMissense Integration"])
+tab1, tab2, tab3, tab_docs = st.tabs(["RIN Comparison & Network Complexity", "Chemical Interactions", "AlphaMissense Integration", "Help & Documentation"]) # Added new tab
 
 all_nodes_set_tab1 = set() 
 valid_dfs_for_processing_tab1 = True if edge_dataframes else False
@@ -758,6 +758,17 @@ with tab3:
         except Exception as e: st.error(f"Error processing AM file: {e}. Check format.")
     elif uniprot_id_input or uploaded_file_am or use_example_file_am : st.warning("Could not load/process AM data. Check input (sidebar).")
     else: st.info("Enter UniProt ID, upload AM file, or use example (sidebar) for Part 3.")
+
+with tab_docs: # New Tab for Documentation
+    st.subheader("Help & Documentation")
+    try:
+        with open("documentation.md", "r", encoding="utf-8") as f:
+            doc_markdown = f.read()
+        st.markdown(doc_markdown, unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.error("`documentation.md` file not found. Please ensure it is in the same directory as the script.")
+    except Exception as e:
+        st.error(f"Could not load documentation: {e}")
 
 if not edge_dataframes and not (uploaded_files or use_example_files):
      st.info("Welcome to SlytheRINs! Upload .edges.txt files or use examples (sidebar) to begin analysis.")
