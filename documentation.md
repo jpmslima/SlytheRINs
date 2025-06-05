@@ -94,13 +94,12 @@ matplotlib
 kaleido
 requests
 fpdf2
-statmodels
 ```
 
 You can install these packages using `pip`:
 
 ```
-pip install streamlit pandas networkx plotly scipy numpy matplotlib requests fpdf2 kaleido statmodels
+pip install streamlit pandas networkx plotly scipy numpy matplotlib requests fpdf2 kaleido
 ```
 
  DejaVu Font files (open-source) are also included in SlytheRINs’ repository fonts folder for full PDF report functionality. The script is configured to look for them there. If these fonts are not found, the PDF report will use a default font, and special characters (like "’", "“", "”") might not render correctly, potentially leading to FPDFUnicodeEncodingException errors.
