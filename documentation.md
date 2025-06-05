@@ -83,26 +83,24 @@ The application was developed by the [EvoMol-Lab](https://github.com/evomol-lab)
 
 To run SlytheRINs locally, you will need Python 3.x and the following packages:
 
-- streamlit
-
-- pandas
-
-- networkx
-
-- plotly
-
-- scipy
-
-- requests (for AlphaMissense download from AlphaFold DB)
-
-- fpdf2 (for PDF report generation)
-
-- kaleido (for exporting Plotly figures to static images like PNG)
+```
+streamlit
+pandas
+networkx
+plotly
+scipy
+numpy
+matplotlib
+kaleido
+requests
+fpdf2
+statmodels
+```
 
 You can install these packages using `pip`:
 
 ```
-pip install streamlit pandas networkx plotly scipy requests fpdf2 kaleido
+pip install streamlit pandas networkx plotly scipy numpy matplotlib requests fpdf2 kaleido statmodels
 ```
 
  DejaVu Font files (open-source) are also included in SlytheRINs’ repository fonts folder for full PDF report functionality. The script is configured to look for them there. If these fonts are not found, the PDF report will use a default font, and special characters (like "’", "“", "”") might not render correctly, potentially leading to FPDFUnicodeEncodingException errors.
@@ -124,7 +122,7 @@ git clone https://github.com/jpmslima/SlytheRINs.git
 - Open your terminal or command prompt and install all dependencies:
 
 ```
-pip install streamlit pandas networkx plotly scipy requests fpdf2 kaleido
+pip install streamlit pandas networkx plotly scipy numpy matplotlib requests fpdf2 kaleido statmodels
 ```
 
 - Navigate to the directory where you saved the SlytheRINs Python script (e.g., `SlytheRINs.py`).

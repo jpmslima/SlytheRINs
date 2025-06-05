@@ -67,28 +67,25 @@ class PDF(FPDF):
             if os.path.exists(self.font_paths['Bold']):
                 self.add_font('DejaVu', 'B', self.font_paths['Bold'], uni=True)
             else:
-                font_loaded_successfully = False 
-                font_files_missing_messages.append(f"Bold: '{self.font_paths['Bold']}' not found.")
+                font_files_missing_messages.append(f"Bold: '{self.font_paths['Bold']}' not found. Bold style may not work as expected.")
 
             if os.path.exists(self.font_paths['Italic']):
                 self.add_font('DejaVu', 'I', self.font_paths['Italic'], uni=True)
             else:
-                font_loaded_successfully = False
-                font_files_missing_messages.append(f"Italic: '{self.font_paths['Italic']}' not found.")
+                font_files_missing_messages.append(f"Italic: '{self.font_paths['Italic']}' not found. Italic style may not work as expected.")
             
             if os.path.exists(self.font_paths['BoldItalic']):
                 self.add_font('DejaVu', 'BI', self.font_paths['BoldItalic'], uni=True)
             else:
-                font_loaded_successfully = False
-                font_files_missing_messages.append(f"BoldItalic: '{self.font_paths['BoldItalic']}' not found.")
+                font_files_missing_messages.append(f"BoldItalic: '{self.font_paths['BoldItalic']}' not found. BoldItalic style may not work as expected.")
 
-            if font_loaded_successfully:
+            if font_loaded_successfully and os.path.exists(self.font_paths['Regular']): 
                 self.font_name = 'DejaVu' 
-                # print("Successfully loaded DejaVuSans font variants for PDF.")
-            else:
+            elif font_files_missing_messages: 
                  missing_files_str = "\n".join(font_files_missing_messages)
-                 st.warning(f"PDF Font Warning: One or more DejaVu font variant files were not found in the 'fonts' directory. Using default font or available variants. Special characters or styles might not render correctly in the PDF. Missing:\n{missing_files_str}")
-
+                 st.warning(f"PDF Font Warning: One or more DejaVu font variant files were not found in the 'fonts/' directory. Using default font or available variants. Special characters or styles might not render correctly in the PDF. Missing:\n{missing_files_str}")
+                 self.font_name = 'Helvetica' 
+            
         except RuntimeError as e: 
             print(f"FPDF Runtime Error during font loading. Using '{self.font_name}'. Error: {e}")
             st.warning(f"PDF Font Warning: A runtime error occurred while loading custom fonts. Using default font. Special characters or styles might not render correctly. Error: {e}")
@@ -188,7 +185,8 @@ def generate_pdf_report(report_elements_list, am_source_msg):
         if element["type"] == "metric":
             pdf.add_metric(element["label"], element["value"])
         elif element["type"] == "plot" or element["type"] == "am_plot" or \
-             element["type"] == "interaction_plot" or element["type"] == "complexity_plot":
+             element["type"] == "interaction_plot" or element["type"] == "complexity_plot" or \
+             element["type"] == "hub_table_plot": 
             pdf.add_plotly_figure_to_pdf(element["fig"], element["title"], element.get("caption"))
         elif element["type"] == "text_summary":
             pdf.section_title(element["title"])
@@ -197,6 +195,11 @@ def generate_pdf_report(report_elements_list, am_source_msg):
             pdf.section_title(f"Complexity Metrics for: {element['graph_name']}")
             for k, v in element["metrics"].items():
                 pdf.add_metric(k, v)
+        elif element["type"] == "hub_table_text": 
+            pdf.section_title(element["title"])
+            pdf.set_font(pdf.font_name, '', 8) 
+            pdf.multi_cell(0,5, element["df_string"])
+            pdf.ln()
                 
     pdf_output_object = pdf.output(dest='S')
     if isinstance(pdf_output_object, str): return pdf_output_object.encode('latin-1') 
@@ -229,7 +232,7 @@ def generate_zip_archive(report_elements_list, am_source_msg_zip):
                     data_summary_for_readme.append(f"- {filename}")
                 except Exception as e:
                     print(f"Error writing df {sanitized_title} to zip: {e}") 
-            elif el_type in ["plot", "am_plot", "interaction_plot", "complexity_plot"]:
+            elif el_type in ["plot", "am_plot", "interaction_plot", "complexity_plot", "hub_table_plot"]: 
                 fig_to_zip = element["fig"]
                 try:
                     png_bytes = convert_fig_to_png(fig_to_zip, scale=2) 
@@ -258,20 +261,20 @@ def generate_zip_archive(report_elements_list, am_source_msg_zip):
 st.set_page_config(layout="wide") 
 with st.sidebar:
     try:
-        st.image('SlytheRINs-logo.svg', use_container_width=True)
-    except FileNotFoundError: st.warning("SlytheRINs-logo.svg not found.")
+        st.image('SlytheRINs-logo2.png', use_container_width=True)
+    except FileNotFoundError: st.warning("SlytheRINs-logo2.png not found.")
     except Exception as e: st.warning(f"Could not load logo: {e}")
 
     st.title('**SlytheRINs**')
-    st.write('*SlytheRINs is an application to analyze and compare Residue Interaction Networks (RINs) calculated from different protein structures and conformations.*')
+    st.write('*SlytheRINs is a Streamlit app to analyze and compare Residue Interaction Networks (RINs) calculated from different protein structures and conformations.*')
     st.caption('Developed by the [EvoMol-Lab](https://github.com/evomol-lab) - BioME, UFRN, Brazil')
 
     st.header("Data Upload")
-    st.subheader("1. RIN Data:")
+    st.subheader("1. RIN Data")
     uploaded_files = st.file_uploader("Upload [RING](https://ring.biocomputingup.it/) generated .edges.txt files", accept_multiple_files=True, type="txt")
     use_example_files = st.checkbox("...or use example RIN files")
 
-    st.subheader("2. AlphaMissense Data:")
+    st.subheader("2. AlphaMissense Data")
     st.info("The download of AlphaMissense data from the [AlphaFold DB](https://alphafold.ebi.ac.uk/) only works for human proteins.")
     uniprot_id_input = st.text_input("Enter UniProt Accession (e.g., P03891)", key="uniprot_id_input")
     download_am_button = st.button("Download & Process from AlphaFold DB", key="download_am_button")
@@ -414,7 +417,7 @@ elif use_example_file_am:
 
 # --- Main Content Area ---
 st.header('**SlytheRINs Dashboard**') 
-tab1, tab2, tab3, tab_docs = st.tabs(["RIN Comparison & Network Complexity", "Chemical Interactions", "AlphaMissense Integration", "Help & Documentation"]) # Added new tab
+tab1, tab2, tab3, tab_docs = st.tabs(["RIN Comparison & Network Complexity", "Chemical Interactions", "AlphaMissense Integration", "Help & Documentation"]) 
 
 all_nodes_set_tab1 = set() 
 valid_dfs_for_processing_tab1 = True if edge_dataframes else False
@@ -425,6 +428,7 @@ with tab1:
         all_degrees_list = [] 
         all_graphs_nx = []    
         all_degrees_tab1, all_betweenness_tab1, all_clustering_tab1, all_triangles_tab1 = [], [], [], [] 
+        all_eigenvector_centrality_tab1 = [] 
         assortativity_values_tab1 = []
         if new_data_loaded_flag: st.session_state.report_elements = []; st.session_state.trigger_pdf_regeneration = True; st.session_state.trigger_zip_regeneration = True
         for i, df_iter in enumerate(edge_dataframes): 
@@ -434,6 +438,27 @@ with tab1:
                 G = nx.from_pandas_edgelist(df_iter, 'NodeId1', 'NodeId2'); all_graphs_nx.append(G); all_nodes_set_tab1.update(G.nodes())
                 current_degrees = dict(G.degree()); all_degrees_list.append(current_degrees); all_degrees_tab1.append(current_degrees)      
                 all_betweenness_tab1.append(nx.betweenness_centrality(G)); all_clustering_tab1.append(nx.clustering(G)); all_triangles_tab1.append(nx.triangles(G))
+                try: 
+                    if nx.is_connected(G): 
+                        all_eigenvector_centrality_tab1.append(nx.eigenvector_centrality_numpy(G))
+                    else: 
+                        if G.number_of_nodes() > 0 : 
+                            largest_cc_nodes = max(nx.connected_components(G), key=len, default=set())
+                            if largest_cc_nodes: 
+                                subgraph = G.subgraph(largest_cc_nodes)
+                                if subgraph.number_of_nodes() > 1: 
+                                    eigenvector_centrality_subgraph = nx.eigenvector_centrality_numpy(subgraph)
+                                    full_graph_eigenvector = {node: eigenvector_centrality_subgraph.get(node, 0) for node in G.nodes()}
+                                    all_eigenvector_centrality_tab1.append(full_graph_eigenvector)
+                                else:
+                                    all_eigenvector_centrality_tab1.append({node: 0 for node in G.nodes()}) 
+                            else: 
+                                all_eigenvector_centrality_tab1.append({node: 0 for node in G.nodes()})
+                        else: 
+                            all_eigenvector_centrality_tab1.append({})
+                except (nx.NetworkXError, nx.NetworkXPointlessConcept, Exception) as e: 
+                    st.warning(f"Could not calculate Eigenvector Centrality for graph '{edge_df_names[i]}'. Error: {e}")
+                    all_eigenvector_centrality_tab1.append({node: 0 for node in G.nodes()} if G.nodes() else {}) 
                 try: assortativity = nx.degree_assortativity_coefficient(G); assortativity_values_tab1.append(assortativity)
                 except: st.warning(f"Assortativity error for '{edge_df_names[i]}'."); assortativity_values_tab1.append(np.nan)
             except Exception as e: st.error(f"Error processing '{edge_df_names[i]}': {e}"); valid_dfs_for_processing_tab1 = False; break
@@ -444,10 +469,19 @@ with tab1:
             all_degree_values = pd.DataFrame(all_degrees_tab1).reindex(columns=sorted_residue_numbers).fillna(0)
             all_betweenness_values = pd.DataFrame(all_betweenness_tab1).reindex(columns=sorted_residue_numbers).fillna(0)
             all_clustering_values = pd.DataFrame(all_clustering_tab1).reindex(columns=sorted_residue_numbers).fillna(0)
+            all_eigenvector_values = pd.DataFrame(all_eigenvector_centrality_tab1).reindex(columns=sorted_residue_numbers).fillna(0) 
             triangle_counts_df = pd.DataFrame(all_triangles_tab1).reindex(columns=sorted_residue_numbers).fillna(0)
-            degree_variance = all_degree_values.var(axis=0); betweenness_variance = all_betweenness_values.var(axis=0); clustering_variance = all_clustering_values.var(axis=0)
+            
+            degree_variance = all_degree_values.var(axis=0); 
+            betweenness_variance = all_betweenness_values.var(axis=0); 
+            clustering_variance = all_clustering_values.var(axis=0)
+            eigenvector_variance = all_eigenvector_values.var(axis=0) 
+
             mean_degree = all_degree_values.mean(axis=0); std_degree = all_degree_values.std(axis=0); neg_std_degree = -std_degree
             mean_triangles = triangle_counts_df.mean(axis=0); std_triangles = triangle_counts_df.std(axis=0)
+            mean_eigenvector = all_eigenvector_values.mean(axis=0) 
+            std_eigenvector = all_eigenvector_values.std(axis=0)   
+
             N_graphs = len(all_degree_values) 
             st.session_state.report_elements.append({"type": "metric", "label": "Number of Networks Loaded", "value": N_graphs, "part": 1})
             st.session_state.report_elements.append({"type": "metric", "label": "Total Unique Residues", "value": len(all_nodes_set_tab1), "part": 1})
@@ -455,12 +489,14 @@ with tab1:
             df_degree_variance_dl = pd.DataFrame({'Residue': sorted_residue_numbers, 'Formatted_Label': formatted_labels, 'Degree_Variance': degree_variance.loc[sorted_residue_numbers]})
             df_betweenness_variance_dl = pd.DataFrame({'Residue': sorted_residue_numbers, 'Formatted_Label': formatted_labels, 'Betweenness_Variance': betweenness_variance.loc[sorted_residue_numbers]})
             df_clustering_variance_dl = pd.DataFrame({'Residue': sorted_residue_numbers, 'Formatted_Label': formatted_labels, 'Clustering_Variance': clustering_variance.loc[sorted_residue_numbers]})
+            df_eigenvector_variance_dl = pd.DataFrame({'Residue': sorted_residue_numbers, 'Formatted_Label': formatted_labels, 'Eigenvector_Variance': eigenvector_variance.loc[sorted_residue_numbers]})
             df_mean_std_degree_dl = pd.DataFrame({'Residue': sorted_residue_numbers, 'Formatted_Label': formatted_labels, 'Mean_Degree': mean_degree.loc[sorted_residue_numbers], 'STD_Degree': std_degree.loc[sorted_residue_numbers]})
+            df_mean_std_eigenvector_dl = pd.DataFrame({'Residue': sorted_residue_numbers, 'Formatted_Label': formatted_labels, 'Mean_Eigenvector': mean_eigenvector.loc[sorted_residue_numbers], 'STD_Eigenvector': std_eigenvector.loc[sorted_residue_numbers]})
             df_triangle_counts_dl = pd.DataFrame({'Residue': sorted_residue_numbers, 'Formatted_Label': formatted_labels, 'Mean_Triangles': mean_triangles.loc[sorted_residue_numbers], 'STD_Triangles': std_triangles.loc[sorted_residue_numbers]})
             df_assortativity_dl = pd.DataFrame({'Graph_Index': list(range(1, len(assortativity_values_tab1) + 1)), 'Graph_Name': edge_df_names[:len(assortativity_values_tab1)], 'Assortativity': assortativity_values_tab1})
             
             st.markdown("#### Variance Plots (Across All Networks)")
-            col_var1, col_var2, col_var3 = st.columns(3)
+            col_var1, col_var2 = st.columns(2) 
             with col_var1:
                 caption_deg_var = "Variation in connectivity (degree) of residues across conformations. High variance highlights residues with constant change in the number of interactions."
                 st.write("##### Degree Variance"); st.caption(caption_deg_var)
@@ -481,6 +517,8 @@ with tab1:
                 dl_c1_2, dl_c2_2 = st.columns(2)
                 with dl_c1_2: st.download_button("Data (TSV)", convert_df_to_tsv(df_betweenness_variance_dl), "betweenness_variance.tsv", key="dl_bet_var_tsv_tab1")
                 with dl_c2_2: st.download_button("Plot (PNG)", convert_fig_to_png(fig_betweenness), "betweenness_variance_plot.png", key="dl_bet_var_png_tab1")
+            
+            col_var3, col_var4 = st.columns(2) 
             with col_var3:
                 caption_clust_var = "Variation in clustering coefficient of residues across conformations. High variance indicates residues that frequently change their local connectivity patterns."
                 st.write("##### Clustering Coefficient Variance"); st.caption(caption_clust_var)
@@ -491,9 +529,20 @@ with tab1:
                 dl_c1_3, dl_c2_3 = st.columns(2)
                 with dl_c1_3: st.download_button("Data (TSV)", convert_df_to_tsv(df_clustering_variance_dl), "clustering_variance.tsv", key="dl_clust_var_tsv_tab1")
                 with dl_c2_3: st.download_button("Plot (PNG)", convert_fig_to_png(fig_clustering), "clustering_variance_plot.png", key="dl_clust_var_png_tab1")
+            with col_var4: 
+                caption_eig_var = "Variation in eigenvector centrality. High variance indicates residues whose influence (considering connections to other influential residues) changes significantly."
+                st.write("##### Eigenvector Centrality Variance"); st.caption(caption_eig_var)
+                fig_eigenvector_var = go.Figure(go.Scatter(x=formatted_labels, y=eigenvector_variance.loc[sorted_residue_numbers], mode='lines+markers'))
+                fig_eigenvector_var.update_layout(title='Eigenvector Centrality Variance', height=400); st.plotly_chart(fig_eigenvector_var, use_container_width=True)
+                st.session_state.report_elements.append({"type": "plot", "fig": fig_eigenvector_var, "title": "Eigenvector Centrality Variance", "caption": caption_eig_var, "part": 1})
+                st.session_state.report_elements.append({"type": "df_text", "df": df_eigenvector_variance_dl, "title": "Eigenvector_Variance_Data", "part": 1})
+                dl_c1_eig, dl_c2_eig = st.columns(2)
+                with dl_c1_eig: st.download_button("Data (TSV)", convert_df_to_tsv(df_eigenvector_variance_dl), "eigenvector_variance.tsv", key="dl_eig_var_tsv_tab1")
+                with dl_c2_eig: st.download_button("Plot (PNG)", convert_fig_to_png(fig_eigenvector_var), "eigenvector_variance_plot.png", key="dl_eig_var_png_tab1")
+
 
             st.markdown("#### Mean & STD Plots (Across All Networks)") 
-            col_mean_std1, col_mean_std2 = st.columns(2)
+            col_mean_std1, col_mean_std2, col_mean_std3 = st.columns(3) 
             with col_mean_std1: 
                 caption_tri_counts = "Display each residue’s average (mean) involvement in triangles (3 mutually connected residues) and its variability across conformations. Shaded areas display the standard deviation, indicating residue participation in local clusters."
                 st.write("##### Triangle Counts"); st.caption(caption_tri_counts)
@@ -514,6 +563,51 @@ with tab1:
                 dl_c1_5, dl_c2_5 = st.columns(2)
                 with dl_c1_5: st.download_button("Data (TSV)", convert_df_to_tsv(df_mean_std_degree_dl), "mean_std_degree.tsv", key="dl_mean_std_deg_tsv_tab1")
                 with dl_c2_5: st.download_button("Plot (PNG)", convert_fig_to_png(fig_degree_sd), "mean_std_degree_plot.png", key="dl_mean_std_deg_png_tab1")
+            with col_mean_std3: 
+                caption_eig_sd = "Displays each residue’s average (mean) eigenvector centrality and its variability. Eigenvector centrality measures a node's influence based on the centrality of its neighbors."
+                st.write("##### Eigenvector Centrality"); st.caption(caption_eig_sd)
+                fig_eigenvector_sd = go.Figure([
+                    go.Scatter(x=formatted_labels, y=mean_eigenvector.loc[sorted_residue_numbers], mode='lines+markers', name='Mean Eigenvector'),
+                    go.Scatter(x=formatted_labels, y=(mean_eigenvector - std_eigenvector).loc[sorted_residue_numbers], fill=None, mode='lines', line_color='lightcoral', name='-STD Eigenvector', showlegend=False), 
+                    go.Scatter(x=formatted_labels, y=(mean_eigenvector + std_eigenvector).loc[sorted_residue_numbers], fill='tonexty', mode='lines', line_color='lightcoral', name='+STD Eigenvector', showlegend=False)
+                ])
+                fig_eigenvector_sd.update_layout(title='Mean & STD of Eigenvector Centrality', height=400, yaxis_title="Eigenvector Centrality"); st.plotly_chart(fig_eigenvector_sd, use_container_width=True)
+                st.session_state.report_elements.append({"type": "plot", "fig": fig_eigenvector_sd, "title": "Mean & STD of Eigenvector Centrality", "caption": caption_eig_sd, "part": 1})
+                st.session_state.report_elements.append({"type": "df_text", "df": df_mean_std_eigenvector_dl, "title": "Mean_STD_Eigenvector_Data", "part": 1})
+                dl_c1_eig_sd, dl_c2_eig_sd = st.columns(2)
+                with dl_c1_eig_sd: st.download_button("Data (TSV)", convert_df_to_tsv(df_mean_std_eigenvector_dl), "mean_std_eigenvector.tsv", key="dl_mean_std_eig_tsv_tab1")
+                with dl_c2_eig_sd: st.download_button("Plot (PNG)", convert_fig_to_png(fig_eigenvector_sd), "mean_std_eigenvector_plot.png", key="dl_mean_std_eig_png_tab1")
+
+            st.markdown("#### Top 10 Hubs (Mean Eigenvector Centrality)")
+            mean_eigenvector_series = all_eigenvector_values.mean(axis=0)
+            top_10_hubs_eigenvector = mean_eigenvector_series.nlargest(10)
+            
+            hub_data = []
+            for residue_raw, centrality_score in top_10_hubs_eigenvector.items():
+                hub_label = "Unknown" 
+                mean_deg_for_hub = mean_degree.get(residue_raw, 0) 
+                try:
+                    parts = residue_raw.split(':')
+                    if len(parts) >= 3: 
+                        res_id = parts[2] 
+                        pos = parts[1]    
+                        hub_label = f"{res_id}{pos}" 
+                except IndexError: pass 
+                except Exception as e: print(f"Error formatting hub label for {residue_raw}: {e}")
+                hub_data.append({
+                    'Raw NodeId': residue_raw, # Changed order, Raw NodeId first
+                    'Hub Residue (AAAPOS)': hub_label, 
+                    'Mean Degree': mean_deg_for_hub, 
+                    'Mean Eigenvector Centrality': centrality_score
+                })
+            
+            df_top_hubs_eigenvector_dl = pd.DataFrame(hub_data)
+            st.dataframe(df_top_hubs_eigenvector_dl[['Raw NodeId', 'Hub Residue (AAAPOS)', 'Mean Degree', 'Mean Eigenvector Centrality']].style.format({'Mean Eigenvector Centrality': "{:.4f}", 'Mean Degree': "{:.2f}"}))
+            st.session_state.report_elements.append({"type": "df_text", "df": df_top_hubs_eigenvector_dl, "title": "Top_10_Hubs_by_Mean_Eigenvector_Centrality", "part": 1}) 
+            hub_table_string = df_top_hubs_eigenvector_dl[['Raw NodeId','Hub Residue (AAAPOS)', 'Mean Degree', 'Mean Eigenvector Centrality']].to_string(index=False)
+            st.session_state.report_elements.append({"type": "hub_table_text", "df_string": hub_table_string, "title": "Top 10 Hubs by Mean Eigenvector Centrality", "part": 1}) 
+            st.download_button("Download Top 10 Hubs Data (TSV)", convert_df_to_tsv(df_top_hubs_eigenvector_dl), "top_10_hubs_eigenvector.tsv", key="dl_top_hubs_eigenvector_tsv")
+
 
             st.markdown("#### Degree Distribution per Residue (Box Plot - Across All Networks)")
             caption_deg_boxplot = "Shows the distribution (median, quartiles, outliers) of degree values for each residue across all analyzed networks."
@@ -641,20 +735,64 @@ with tab1:
                                 else:
                                     degree_counts = Counter(degrees_current_graph); deg, cnt = zip(*degree_counts.items())
                                     df_degree_dist_dl = pd.DataFrame({'Degree': deg, 'Count': cnt}).sort_values(by='Degree')
-                                    fig_deg_dist = go.Figure(); fig_deg_dist.add_trace(go.Bar(x=deg, y=cnt))
-                                    log_x_dd = st.checkbox(f"Log X-axis", key=f"logx_dd_{selected_graph_name_complex.replace('.', '_')}")
-                                    log_y_dd = st.checkbox(f"Log Y-axis", key=f"logy_dd_{selected_graph_name_complex.replace('.', '_')}")
-                                    xaxis_type_dd = "log" if log_x_dd else "linear"; yaxis_type_dd = "log" if log_y_dd else "linear"
-                                    fig_deg_dist.update_layout(title=f"Degree Distribution for '{selected_graph_name_complex}'", height=400, xaxis_type=xaxis_type_dd, yaxis_type=yaxis_type_dd); st.plotly_chart(fig_deg_dist, use_container_width=True)
-                                    st.session_state.report_elements.append({"type": "complexity_plot", "fig": fig_deg_dist, "title": f"Degree Distribution for '{selected_graph_name_complex}'", "caption": caption_deg_dist, "part": 1})
-                                    st.session_state.report_elements.append({"type": "df_text", "df": df_degree_dist_dl, "title": f"Degree Distribution Data for '{selected_graph_name_complex}'", "part": 1})
+                                    
+                                    fig_deg_dist_bar = go.Figure(); fig_deg_dist_bar.add_trace(go.Bar(x=deg, y=cnt))
+                                    log_x_dd_bar = st.checkbox(f"Log X-axis (Bar)", key=f"logx_dd_bar_{selected_graph_name_complex.replace('.', '_')}")
+                                    log_y_dd_bar = st.checkbox(f"Log Y-axis (Bar)", key=f"logy_dd_bar_{selected_graph_name_complex.replace('.', '_')}")
+                                    xaxis_type_dd_bar = "log" if log_x_dd_bar else "linear"; yaxis_type_dd_bar = "log" if log_y_dd_bar else "linear"
+                                    fig_deg_dist_bar.update_layout(title=f"Degree Dist. (Bar) for '{selected_graph_name_complex}'", height=400, xaxis_type=xaxis_type_dd_bar, yaxis_type=yaxis_type_dd_bar); 
+                                    st.plotly_chart(fig_deg_dist_bar, use_container_width=True)
+                                    st.session_state.report_elements.append({"type": "complexity_plot", "fig": fig_deg_dist_bar, "title": f"Degree Distribution (Bar) for '{selected_graph_name_complex}'", "caption": caption_deg_dist, "part": 1})
+                                    
+                                    st.markdown("###### Degree Distribution (Scatter with Trendline)");
+                                    fig_deg_dist_scatter = px.scatter(df_degree_dist_dl, x='Degree', y='Count', trendline="ols", title=f"Degree Dist. (Scatter) for '{selected_graph_name_complex}'")
+                                    log_x_dd_scatter = st.checkbox(f"Log X-axis (Scatter)", key=f"logx_dd_scatter_{selected_graph_name_complex.replace('.', '_')}")
+                                    log_y_dd_scatter = st.checkbox(f"Log Y-axis (Scatter)", key=f"logy_dd_scatter_{selected_graph_name_complex.replace('.', '_')}")
+                                    xaxis_type_dd_scatter = "log" if log_x_dd_scatter else "linear"; yaxis_type_dd_scatter = "log" if log_y_dd_scatter else "linear"
+                                    fig_deg_dist_scatter.update_layout(height=400, xaxis_type=xaxis_type_dd_scatter, yaxis_type=yaxis_type_dd_scatter)
+                                    st.plotly_chart(fig_deg_dist_scatter, use_container_width=True)
+                                    st.session_state.report_elements.append({"type": "complexity_plot", "fig": fig_deg_dist_scatter, "title": f"Degree Distribution (Scatter) for '{selected_graph_name_complex}'", "caption": caption_deg_dist + " OLS trendline shown.", "part": 1})
+                                    
+                                    st.session_state.report_elements.append({"type": "df_text", "df": df_degree_dist_dl, "title": f"Degree_Distribution_Data_{selected_graph_name_complex}", "part": 1})
                                     dl_c1_sub_9, dl_c2_sub_9 = st.columns(2)
                                     with dl_c1_sub_9: st.download_button(f"Data (TSV)", convert_df_to_tsv(df_degree_dist_dl), f"degree_dist_{selected_graph_name_complex}.tsv", key=f"dl_deg_dist_tsv_sel_{selected_graph_name_complex.replace('.', '_')}")
-                                    with dl_c2_sub_9: st.download_button(f"Plot (PNG)", convert_fig_to_png(fig_deg_dist), f"degree_dist_{selected_graph_name_complex}_plot.png", key=f"dl_deg_dist_png_sel_{selected_graph_name_complex.replace('.', '_')}")
+                                    with dl_c2_sub_9: st.download_button(f"Scatter Plot (PNG)", convert_fig_to_png(fig_deg_dist_scatter), f"degree_dist_scatter_{selected_graph_name_complex}_plot.png", key=f"dl_deg_dist_png_sel_scatter_{selected_graph_name_complex.replace('.', '_')}")
                             else: st.write("Graph empty.")
                         except ValueError: st.error(f"Could not find selected graph '{selected_graph_name_complex}'.")
                         except IndexError: st.error(f"Index error for graph '{selected_graph_name_complex}'.")
                 else: st.info("No networks for complexity analysis.")
+            
+            st.markdown("#### Aggregated Degree Distribution (All Networks)")
+            caption_agg_deg_dist = "Shows the mean count of nodes (P(k)) for each degree (k) across all uploaded networks. The shaded area represents +/- one standard deviation."
+            st.caption(caption_agg_deg_dist)
+            all_degree_distributions_data = []
+            for idx, G_iter in enumerate(all_graphs_nx):
+                graph_name_iter = edge_df_names[idx]
+                degrees_iter = [d for n, d in G_iter.degree()]
+                if degrees_iter:
+                    degree_counts_iter = Counter(degrees_iter)
+                    for k_val, pk_val in degree_counts_iter.items():
+                        all_degree_distributions_data.append({'k': k_val, 'P(k)': pk_val, 'graph_name': graph_name_iter})
+            if all_degree_distributions_data:
+                df_all_deg_dist = pd.DataFrame(all_degree_distributions_data)
+                df_agg_deg_dist = df_all_deg_dist.groupby('k')['P(k)'].agg(['mean', 'std']).reset_index()
+                df_agg_deg_dist['std'] = df_agg_deg_dist['std'].fillna(0) 
+                fig_agg_deg_dist = go.Figure([
+                    go.Scatter(name='Mean P(k)', x=df_agg_deg_dist['k'], y=df_agg_deg_dist['mean'], mode='lines+markers', line=dict(color='rgb(31, 119, 180)')),
+                    go.Scatter(name='Upper Bound (Mean+STD)', x=df_agg_deg_dist['k'], y=df_agg_deg_dist['mean'] + df_agg_deg_dist['std'], mode='lines', marker=dict(color="#444"), line=dict(width=0), showlegend=False),
+                    go.Scatter(name='Lower Bound (Mean-STD)', x=df_agg_deg_dist['k'], y=df_agg_deg_dist['mean'] - df_agg_deg_dist['std'], marker=dict(color="#444"), line=dict(width=0), mode='lines', fillcolor='rgba(68, 68, 68, 0.3)', fill='tonexty', showlegend=False)
+                ])
+                log_x_agg_dd = st.checkbox(f"Log X-axis (Aggregated)", key="logx_agg_dd")
+                log_y_agg_dd = st.checkbox(f"Log Y-axis (Aggregated)", key="logy_agg_dd")
+                xaxis_type_agg_dd = "log" if log_x_agg_dd else "linear"; yaxis_type_agg_dd = "log" if log_y_agg_dd else "linear"
+                fig_agg_deg_dist.update_layout(title='Mean Degree Distribution (+/- STD) Across All Networks', xaxis_title='Degree (k)', yaxis_title='Mean Number of Nodes P(k)', height=500, xaxis_type=xaxis_type_agg_dd, yaxis_type=yaxis_type_agg_dd)
+                st.plotly_chart(fig_agg_deg_dist, use_container_width=True)
+                st.session_state.report_elements.append({"type": "plot", "fig": fig_agg_deg_dist, "title": "Aggregated Degree Distribution (All Networks)", "caption": caption_agg_deg_dist, "part": 1})
+                st.session_state.report_elements.append({"type": "df_text", "df": df_agg_deg_dist, "title": "Aggregated_Degree_Distribution_Data", "part": 1})
+                col1_agg_dd, col2_agg_dd = st.columns(2)
+                with col1_agg_dd: st.download_button("Data (TSV)", convert_df_to_tsv(df_agg_deg_dist), "aggregated_degree_distribution.tsv", key="dl_agg_deg_dist_tsv")
+                with col2_agg_dd: st.download_button("Plot (PNG)", convert_fig_to_png(fig_agg_deg_dist), "aggregated_degree_distribution_plot.png", key="dl_agg_deg_dist_png")
+            else: st.warning("No data available for aggregated degree distribution plot.")
         elif valid_dfs_for_processing_tab1 and not all_nodes_set_tab1: st.warning("Dataframes loaded, but no nodes extracted.")
         elif not edge_dataframes: st.info("Upload .edges.txt files or use examples (sidebar) for Part 1.")
     else: st.info("Upload .edges.txt files or use examples (sidebar) for Part 1 analysis.")
@@ -769,6 +907,7 @@ with tab_docs: # New Tab for Documentation
         st.error("`documentation.md` file not found. Please ensure it is in the same directory as the script.")
     except Exception as e:
         st.error(f"Could not load documentation: {e}")
+
 
 if not edge_dataframes and not (uploaded_files or use_example_files):
      st.info("Welcome to SlytheRINs! Upload .edges.txt files or use examples (sidebar) to begin analysis.")
