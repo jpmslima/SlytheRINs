@@ -8,4 +8,4 @@ matplotlib
 kaleido
 requests
 fpdf2
-statmodels
+statsmodels
