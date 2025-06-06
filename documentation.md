@@ -195,6 +195,10 @@ This section compares multiple RINs and analyzes the complexity of individual ne
 - **Mean & STD Plots (Across All Networks):**
   - **Triangle Counts:** Displays each residue’s average (mean) involvement in triangles (3 mutually connected residues) and its variability (standard deviation) across conformations.
   - **Degree Values:** Displays each residue’s average (mean) degree and variability (standard deviation) across conformations.
+  - **Eigenvector Centrality:** Displays each residue’s average (mean) eigenvector centrality and its variability. Eigenvector centrality measures a node's influence based on the centrality of its neighbors.
+
+- **Top 10 Hubs (Mean Eigenvector Centrality):**
+  - A table describing the top ten residues hubs based on their mean eigenvector centrality values. The table has the Node_ID (amino acid residue and position), the residue's mean degree and mean eigenvector centrality values.
 
 - **Degree Distribution per Residue (Box Plot - Across All Networks):**
   - For each residue, this box plot shows the distribution (median, quartiles, outliers) of its degree values across all analyzed networks.
@@ -219,7 +223,10 @@ This section compares multiple RINs and analyzes the complexity of individual ne
     - Average Clustering Coefficient. 
     - Average Shortest Path Length (calculated for the most significant connected component if the graph is disconnected).
 
-- **Degree Distribution Plot:** A bar chart showing the distribution of node degrees (how many nodes have k connections). Checkboxes allow toggling log scales for the X and Y axes to help identify potential power-law distributions characteristic of scale-free networks.
+- **Degree Distribution Plot:** A bar and scatter charts showing the distribution of node degrees (how many nodes have k connections). Checkboxes allow toggling log scales for the X and Y axes to help identify potential power-law distributions characteristic of scale-free networks.
+
+- **Aggregated Degree Distribution (All Networks):**
+Shows the mean count of nodes (P(k)) for each degree (k) across all uploaded networks. The shaded area represents +/- standard deviation. Checkboxes allow toggling log scales for the X and Y axes to help identify potential power-law distributions characteristic of scale-free networks.
 
 ### <a name='Part2:ChemicalInteractionAnalysis'></a>6.2. Part 2: Chemical Interaction Analysis
 

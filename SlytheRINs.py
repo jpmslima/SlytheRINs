@@ -266,7 +266,7 @@ with st.sidebar:
     except Exception as e: st.warning(f"Could not load logo: {e}")
 
     st.title('**SlytheRINs**')
-    st.write('*SlytheRINs is a Streamlit app to analyze and compare Residue Interaction Networks (RINs) calculated from different protein structures and conformations.*')
+    st.write('*SlytheRINs is an application to analyze and compare Residue Interaction Networks (RINs) calculated from different protein structures and conformations.*')
     st.caption('Developed by the [EvoMol-Lab](https://github.com/evomol-lab) - BioME, UFRN, Brazil')
 
     st.header("Data Upload")
