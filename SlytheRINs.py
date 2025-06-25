@@ -33,8 +33,9 @@ def convert_fig_to_png(fig, scale=2): # Added scale parameter
         img_bytes = fig.to_image(format="png", scale=scale) 
         return img_bytes
     except Exception as e:
-        st.error(f"Could not generate PNG. Ensure 'kaleido' is installed (pip install kaleido). Error: {e}")
-        return io.BytesIO()
+        #Error message without kaleido
+        st.error(f"Could not generate PNG. An error ocurred during image conversion. Error: {e}")
+        return io.BytesIO() #empty bytes to prevent crashing
 
 # --- PDF Report Generation Class ---
 class PDF(FPDF):
@@ -162,8 +163,9 @@ class PDF(FPDF):
             x_pos = (self.w - img_render_width) / 2
             self.image(img_file, x=x_pos, w=img_render_width); self.ln(5) 
         except Exception as e:
+            #Removing kaleido
             self.set_font(self.font_name, 'I', 9); self.set_text_color(255, 0, 0) 
-            self.multi_cell(0, 5, self._standardize_text(f"Error embedding plot '{title}' in PDF: {e}. Ensure 'kaleido' is installed."))
+            self.multi_cell(0, 5, self._standardize_text(f"Error embedding plot '{title}' . Image conversion failed in PDF: {e}"))
             self.set_text_color(0, 0, 0); self.ln()
             
 # --- Function to generate PDF ---
