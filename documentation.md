@@ -88,13 +88,13 @@ streamlit
 pandas
 networkx
 plotly
-scipy
+scipy==1.15.3
 numpy
 matplotlib
-kaleido
 requests
 fpdf2
 statsmodels
+kaleido==0.2.1
 ```
 
 You can install these packages using `pip`:

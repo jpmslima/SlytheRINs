@@ -2,7 +2,7 @@ streamlit
 pandas
 networkx
 plotly
-scipy
+scipy==1.15.3
 numpy
 matplotlib
 requests
