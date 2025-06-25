@@ -5,7 +5,6 @@ plotly
 scipy
 numpy
 matplotlib
-kaleido
 requests
 fpdf2
 statsmodels
