@@ -20,6 +20,10 @@ from fpdf import FPDF # For PDF generation
 from datetime import datetime # For PDF timestamp
 import zipfile # For creating zip archives
 
+#Keep the original colors on png download
+import plotly.io as pio
+pio.templates.default = "plotly_white"
+
 # --- Helper function for downloads ---
 @st.cache_data # Use Streamlit's caching for efficiency
 def convert_df_to_tsv(df):
