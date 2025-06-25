@@ -8,3 +8,4 @@ matplotlib
 requests
 fpdf2
 statsmodels
+kaleido==0.2.1
